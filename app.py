@@ -4,16 +4,18 @@ from PIL import Image, ImageOps
 import numpy as np
 import os
 import random
+import streamlit.components.v1 as components  
 
-logo_path = "greensight_logo.png" 
+logo_path = "greensight_logo.png"
 st.set_page_config(
     page_title="GreenSight AI: Smart Waste Classification",
-    page_icon=logo_path if os.path.exists(logo_path) else "♻️", 
+    page_icon=logo_path if os.path.exists(logo_path) else "♻️",
     layout="centered"
 )
 
 
 MODEL_PATH = 'ecovision_model.h5'
+GAME_FILE = 'game.html' 
 
 
 @st.cache_resource
@@ -22,7 +24,7 @@ def load_model():
     if not os.path.exists(MODEL_PATH):
         
         st.error(f"Error: Model file not found at {MODEL_PATH}")
-        st.write("Please run `python train_model.py` to train and save the model.")
+        st.write("Please ensure `ecovision_model.h5` is in the same folder as `app.py`.")
         st.stop()
         
     try:
@@ -57,25 +59,25 @@ def predict_waste(image_data, model):
     
     size = (150, 150) 
     
-   
+    
     image = ImageOps.fit(image_data, size, Image.Resampling.LANCZOS)
     
-   
+    
     image_array = np.asarray(image)
     
-  
+    
     normalized_image_array = (image_array.astype(np.float32) / 255.0) 
     
     
     data = np.expand_dims(normalized_image_array, axis=0)
     
-   
+    
     prediction = model.predict(data)
     
-   
+    
     confidence = prediction[0][0]
     
-   
+    
     
     if confidence > 0.5:
         return "Non-Biodegradable", confidence
@@ -91,14 +93,21 @@ st.title("GreenSight AI")
 st.subheader("“AI-Driven Waste Classification for a Cleaner, Greener Tomorrow”")
 
 
-tab1, tab2, tab3, tab4 = st.tabs(["🤖 AI Classifier", "ℹ️ Local Recycling Guide", "🌍 About This Project", "🇮🇳 Govt. Initiatives"])
+
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    "🤖 AI Classifier", 
+    "ℹ️ Local Recycling Guide", 
+    "🌍 About This Project", 
+    "🇮🇳 Govt. Initiatives",
+    "🎮 Sorting Game"  
+])
 
 with tab1:
     st.markdown(
         "Upload an image or use your webcam, and the AI will classify your waste item."
     )
     
-   
+    
     sub_tab1, sub_tab2 = st.tabs(["⬆️ Upload Image", "📸 Use Webcam"])
     uploaded_image = None
 
@@ -116,7 +125,7 @@ with tab1:
     if uploaded_image is not None:
         image = uploaded_image
 
-       
+        
         st.image(image, caption='Uploaded Image', use_container_width=True)
         
         
@@ -124,9 +133,9 @@ with tab1:
             
             label, confidence = predict_waste(image, model)
 
-       
+        
         if label == "Non-Biodegradable":
-          
+            
             st.error(f"**Prediction: ♻️ {label}**")
             
             st.progress(float(confidence), text=f"Confidence: {confidence*100:.2f}%")
@@ -134,7 +143,7 @@ with tab1:
             st.subheader("Eco-Friendly Tip 💡")
             st.warning(random.choice(NON_BIO_TIPS))
         else:
-           
+            
             st.success(f"**Prediction: 🌿 {label}**")
             
             st.progress(float(confidence), text=f"Confidence: {confidence*100:.2f}%")
@@ -210,17 +219,17 @@ with tab2:
         }
     }
 
- 
+    
     location = st.radio("Select your location:", options=list(RECYCLING_GUIDES.keys()), index=0)
 
-   
+    
     if location != "Select a Location":
         guide_info = RECYCLING_GUIDES[location]
         st.info(guide_info["text"])
         
 
 with tab3:
-   
+    
     st.subheader("About GreenSight AI")
     st.info(
         "GreenSight AI is an AI-powered tool built to promote sustainable waste management. "
@@ -228,7 +237,7 @@ with tab3:
         "to classify waste from images."
     )
     
- 
+    
     st.subheader("Project Built With:")
     st.markdown(
         """
@@ -252,7 +261,7 @@ with tab3:
         """
     )
     
-  
+    
     st.divider()
     with st.expander("🌍 Why is waste segregation important?"):
         st.markdown("""
@@ -290,7 +299,7 @@ with tab4:
         - **National Food Security Act:** GuaranteES food security for the population.
         """)
 
-  
+    
     with st.expander("☀️ Environmental and Climate Action"):
         st.markdown("""
         - **National Action Plan on Climate Change:** Outlines a national framework for addressing climate change through both adaptation and mitigation.
@@ -299,12 +308,29 @@ with tab4:
         - **Atal Mission for Rejuvenation and Urban Transformation (AMRUT):** Aims to improve basic urban infrastructure like water supply and sanitation.
         """)
 
-   
+    
     with st.expander("📊 Governance and Monitoring"):
         st.markdown("""
         - **NITI Aayog SDG India Index:** A tool to track the progress of states and union territories on various SDG indicators, fostering competition and enabling informed policy-making.
         - **Direct Benefit Transfers (DBT):** Leveraging programs like PMJDY, the government uses a direct cash transfer system to improve the efficiency of program delivery.
         """)
+
+
+with tab5:
+    st.subheader("GreenSight Sorting Challenge")
+    st.info("Drag the waste items to the correct bin to test your knowledge!")
+    
+    if os.path.exists(GAME_FILE):
+    
+        with open(GAME_FILE, "r", encoding="utf-8") as f:
+            html_code = f.read()
+        
+        
+        components.html(html_code, height=750, scrolling=True)
+    else:
+        st.error(f"Error: '{GAME_FILE}' not found.")
+        st.write("Please make sure the `game.html` file is in the same folder as `app.py`.")
+
 
 
 if os.path.exists(logo_path):
